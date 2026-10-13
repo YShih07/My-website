@@ -21,7 +21,7 @@ html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #101014;
+    background: #0d0d11;
     font-family: 'UnifrakturMaguntia', cursive, serif;
     user-select: none;
 }
@@ -31,10 +31,10 @@ html, body {
     position: fixed;
     inset: 0;
     z-index: 0;
-    background-color: #101014;
+    background-color: #0d0d11;
     background-image:
-        linear-gradient(rgba(255,255,255,.055) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.055) 1px, transparent 1px);
+        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
     background-size: 50px 50px;
     pointer-events: none;
 }
@@ -72,24 +72,24 @@ html, body {
     pointer-events: none;
 }
 
-/* 顶部哥特英文字体（调小字号） */
+/* 顶部哥特英文字体 */
 .top-title {
     font-family: 'UnifrakturMaguntia', cursive, serif;
-    font-size: clamp(1.6rem, 3.8vw, 4.2rem);
+    font-size: clamp(1.5rem, 3.5vw, 4rem);
     font-weight: 400;
     letter-spacing: .06em;
     line-height: 1.1;
-    color: #fff;
+    color: #ffffff;
     text-align: center;
     text-shadow: 0 4px 30px rgba(0,0,0,.85);
 }
 
-/* 中文行书行（调大字号） */
+/* 中文行书行 */
 .chinese-row {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: clamp(20px, 6vw, 80px);
+    gap: clamp(20px, 6vw, 85px);
     width: 100%;
 }
 
@@ -105,7 +105,7 @@ html, body {
 .bottom-info {
     font-size: .7rem;
     letter-spacing: .25em;
-    color: rgba(255,255,255,.55);
+    color: rgba(255,255,255,.45);
     text-align: center;
 }
 
@@ -113,35 +113,14 @@ html, body {
     position: fixed;
     z-index: 4;
     left: 50%;
-    bottom: 12vh;
+    bottom: 11vh;
     transform: translateX(-50%);
-    color: rgba(255,255,255,.55);
+    color: rgba(255,255,255,.4);
     font: 10px Arial, sans-serif;
     letter-spacing: .18em;
     text-align: center;
     pointer-events: none;
     transition: opacity .5s;
-}
-
-.loading {
-    position: fixed;
-    z-index: 4;
-    left: 50%;
-    top: 50%;
-    transform: translate(-50%, -50%);
-    width: min(80vw, 420px);
-    color: rgba(255,255,255,.8);
-    font: 12px/1.8 Arial, sans-serif;
-    letter-spacing: .08em;
-    text-align: center;
-    pointer-events: none;
-}
-
-.loading strong {
-    display: block;
-    margin-bottom: 8px;
-    font-size: 14px;
-    letter-spacing: .2em;
 }
 
 @media (max-width: 600px) {
@@ -151,7 +130,7 @@ html, body {
     }
 
     .chinese-row {
-        gap: 5vw;
+        gap: 4vw;
     }
 
     .bottom-info {
@@ -160,13 +139,12 @@ html, body {
     }
 
     .hint {
-        bottom: 15vh;
+        bottom: 14vh;
     }
 }
 </style>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/loaders/GLTFLoader.js"></script>
 </head>
 
 <body>
@@ -193,11 +171,6 @@ html, body {
     </div>
 </div>
 
-<div class="loading" id="loading">
-    <strong>CREATIVE STUDIO YU</strong>
-    正在加载 3D 雕塑……
-</div>
-
 <div class="hint" id="hint">
     DRAG TO ROTATE · SCROLL TO ZOOM
 </div>
@@ -205,21 +178,20 @@ html, body {
 <script>
 (() => {
     const container = document.getElementById('canvas-container');
-    const loading = document.getElementById('loading');
     const hint = document.getElementById('hint');
 
     let scene, camera, renderer;
-    let sculpture = null;
+    let diamondMesh = null;
     let modelPivot = null;
 
     let isDragging = false;
     let lastX = 0;
     let lastY = 0;
 
-    let rotationX = 0;
-    let rotationY = 0;
-    let targetRotationX = 0;
-    let targetRotationY = 0;
+    let rotationX = 0.2;
+    let rotationY = 0.4;
+    let targetRotationX = 0.2;
+    let targetRotationY = 0.4;
 
     let zoom = 1;
     let targetZoom = 1;
@@ -240,7 +212,6 @@ html, body {
             0.1,
             100
         );
-
         camera.position.set(0, 0, 7.5);
 
         renderer = new THREE.WebGLRenderer({
@@ -251,146 +222,87 @@ html, body {
 
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setClearColor(0x101014, 0);
+        renderer.setClearColor(0x0d0d11, 0);
 
         renderer.outputEncoding = THREE.sRGBEncoding;
         renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.15;
+        renderer.toneMappingExposure = 1.2;
 
         container.appendChild(renderer.domElement);
 
-        // 环境光：让雕塑暗部仍保留细节
-        scene.add(new THREE.AmbientLight(0xd9d4ff, 1.2));
+        // 灯光设置
+        scene.add(new THREE.AmbientLight(0xdcd6ff, 1.2));
 
-        // 正面柔光
-        const keyLight = new THREE.DirectionalLight(0xffffff, 2.6);
-        keyLight.position.set(3, 5, 6);
+        const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
+        keyLight.position.set(4, 6, 6);
         scene.add(keyLight);
 
-        // 紫色轮廓光
-        const purpleLight = new THREE.PointLight(0xa855f7, 5, 15);
-        purpleLight.position.set(-4, 1, -3);
+        const purpleLight = new THREE.PointLight(0xb066ff, 5.5, 18);
+        purpleLight.position.set(-4, 1, -2);
         scene.add(purpleLight);
 
-        // 蓝色轮廓光
-        const blueLight = new THREE.PointLight(0x38bdf8, 4.5, 15);
-        blueLight.position.set(4, 2, -2);
+        const blueLight = new THREE.PointLight(0x38bdf8, 4.5, 18);
+        blueLight.position.set(4, -2, -2);
         scene.add(blueLight);
 
-        // 柔和的正面补光
-        const fillLight = new THREE.PointLight(0xf5eaff, 2, 12);
-        fillLight.position.set(0, -3, 5);
-        scene.add(fillLight);
-
-        // 模型旋转支点
+        // 创建旋转支点
         modelPivot = new THREE.Group();
         scene.add(modelPivot);
 
-        loadModel();
+        createDiamond();
 
-        // 鼠标拖动旋转
+        // 交互监听
         container.addEventListener('pointerdown', onPointerDown);
         window.addEventListener('pointermove', onPointerMove);
         window.addEventListener('pointerup', onPointerUp);
         window.addEventListener('pointercancel', onPointerUp);
-
-        // 滚轮缩放
         container.addEventListener('wheel', onWheel, { passive: false });
-
-        // 手机触控由 Pointer Events 统一处理
         window.addEventListener('resize', onResize);
     }
 
-    function loadModel() {
-        const loader = new THREE.GLTFLoader();
+    function createDiamond() {
+        // 创建 3D 菱形（双锥八面体，上下拉伸出优美的几何比例）
+        const geometry = new THREE.OctahedronGeometry(1.4, 0);
+        
+        // 适当拉长 Y 轴，使其呈立体的长菱形水晶效果
+        geometry.scale(1.0, 1.5, 1.0);
 
-        // 将免费的真实人体躯干模型命名为 torso.glb，
-        // 并放在本 HTML 文件的同一目录中。
-        loader.load(
-            './torso.glb',
+        // 浅紫磨砂半透明玻璃材质
+        const material = new THREE.MeshPhysicalMaterial({
+            color: new THREE.Color(0xd8c8ff),
+            emissive: new THREE.Color(0x2d124d),
+            emissiveIntensity: 0.25,
+            metalness: 0.1,
+            roughness: 0.18,
+            transmission: 0.85,    // 折射半透明
+            thickness: 1.5,
+            clearcoat: 1.0,
+            clearcoatRoughness: 0.1,
+            transparent: true,
+            opacity: 0.88,
+            side: THREE.DoubleSide
+        });
 
-            function(gltf) {
-                sculpture = gltf.scene;
+        diamondMesh = new THREE.Mesh(geometry, material);
 
-                // 统一使用偏冷的玻璃材质风格
-                sculpture.traverse(function(object) {
-                    if (!object.isMesh) return;
+        // 添加细发光边框外发光线，增强几何雕塑感
+        const wireframeGeo = new THREE.WireframeGeometry(geometry);
+        const wireframeMat = new THREE.LineBasicMaterial({
+            color: 0xe3d5ff,
+            transparent: true,
+            opacity: 0.35
+        });
+        const wireframe = new THREE.LineSegments(wireframeGeo, wireframeMat);
+        diamondMesh.add(wireframe);
 
-                    object.castShadow = false;
-                    object.receiveShadow = false;
-
-                    const oldMaterial = object.material;
-                    const baseColor = oldMaterial && oldMaterial.color
-                        ? oldMaterial.color.clone()
-                        : new THREE.Color(0xd9d0ff);
-
-                    object.material = new THREE.MeshPhysicalMaterial({
-                        color: baseColor.lerp(
-                            new THREE.Color(0xc7b6f5),
-                            0.35
-                        ),
-                        metalness: 0.12,
-                        roughness: 0.22,
-                        clearcoat: 1.0,
-                        clearcoatRoughness: 0.14,
-                        emissive: new THREE.Color(0x211033),
-                        emissiveIntensity: 0.18,
-                        transparent: true,
-                        opacity: 0.88,
-                        side: THREE.DoubleSide
-                    });
-                });
-
-                // 自动计算模型大小并居中
-                const bounds = new THREE.Box3().setFromObject(sculpture);
-                const size = bounds.getSize(new THREE.Vector3());
-                const center = bounds.getCenter(new THREE.Vector3());
-
-                sculpture.position.sub(center);
-
-                const maxDimension = Math.max(size.x, size.y, size.z);
-                const scale = maxDimension > 0
-                    ? 3.25 / maxDimension
-                    : 1;
-
-                sculpture.scale.setScalar(scale);
-
-                modelPivot.add(sculpture);
-
-                loading.style.display = 'none';
-            },
-
-            function(xhr) {
-                if (xhr.total > 0) {
-                    const progress = Math.round(
-                        xhr.loaded / xhr.total * 100
-                    );
-
-                    loading.innerHTML =
-                        '<strong>LOADING SCULPTURE</strong>' +
-                        progress + '%';
-                }
-            },
-
-            function(error) {
-                console.error('3D 模型加载失败：', error);
-
-                loading.innerHTML =
-                    '<strong>MODEL NOT FOUND</strong>' +
-                    '请将免费的人体模型命名为 torso.glb，' +
-                    '放在 index.html 同一文件夹中。' +
-                    '<br>请通过本地网页服务器打开页面。';
-            }
-        );
+        modelPivot.add(diamondMesh);
     }
 
     function onPointerDown(event) {
         if (event.button !== undefined && event.button !== 0) return;
-
         isDragging = true;
         lastX = event.clientX;
         lastY = event.clientY;
-
         container.setPointerCapture?.(event.pointerId);
     }
 
@@ -406,11 +318,6 @@ html, body {
         targetRotationY += dx * 0.008;
         targetRotationX += dy * 0.008;
 
-        targetRotationX = Math.max(
-            -0.9,
-            Math.min(0.9, targetRotationX)
-        );
-
         lastX = event.clientX;
         lastY = event.clientY;
 
@@ -423,15 +330,13 @@ html, body {
 
     function onWheel(event) {
         event.preventDefault();
-
         targetZoom += event.deltaY * -0.001;
-        targetZoom = Math.max(0.65, Math.min(1.7, targetZoom));
+        targetZoom = Math.max(0.65, Math.min(1.8, targetZoom));
     }
 
     function onResize() {
         camera.aspect = window.innerWidth / window.innerHeight;
         camera.updateProjectionMatrix();
-
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     }
@@ -442,28 +347,19 @@ html, body {
         const elapsed = clock.getElapsedTime();
 
         if (modelPivot) {
-            // 平滑跟随拖动
-            rotationX += (targetRotationX - rotationX) * 0.09;
-            rotationY += (targetRotationY - rotationY) * 0.09;
+            rotationX += (targetRotationX - rotationX) * 0.08;
+            rotationY += (targetRotationY - rotationY) * 0.08;
 
             modelPivot.rotation.x = rotationX;
             modelPivot.rotation.y = rotationY;
 
-            // 没有拖动时，轻微跟随鼠标
+            // 自动微弱自转与悬浮
             if (!isDragging) {
-                modelPivot.rotation.y +=
-                    (pointerX * 0.08) * 0.008;
-                modelPivot.rotation.x +=
-                    (-pointerY * 0.04) * 0.008;
+                targetRotationY += 0.002;
+                modelPivot.position.y = Math.sin(elapsed * 0.9) * 0.06;
             }
 
-            // 柔和悬浮效果
-            if (sculpture) {
-                modelPivot.position.y =
-                    Math.sin(elapsed * 0.8) * 0.045;
-            }
-
-            zoom += (targetZoom - zoom) * 0.12;
+            zoom += (targetZoom - zoom) * 0.1;
             modelPivot.scale.setScalar(zoom);
         }
 

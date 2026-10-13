@@ -21,67 +21,46 @@ html, body {
     width: 100%;
     height: 100%;
     overflow: hidden;
-    background: #0d0d11;
+    background-color: #e5e5e7; /* 浅灰色背景 */
     font-family: 'UnifrakturMaguntia', cursive, serif;
     user-select: none;
 }
 
-/* 背景网格 */
+/* 浅灰色网格背景 */
 .grid-bg {
     position: fixed;
     inset: 0;
     z-index: 0;
-    background-color: #0d0d11;
+    background-color: #e5e5e7;
     background-image:
-        linear-gradient(rgba(255,255,255,.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.04) 1px, transparent 1px);
+        linear-gradient(rgba(0, 0, 0, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.06) 1px, transparent 1px);
     background-size: 50px 50px;
     pointer-events: none;
 }
 
-/* 3D 场景 */
-#canvas-container {
-    position: fixed;
-    inset: 0;
-    z-index: 1;
-    cursor: grab;
-    touch-action: none;
-}
-
-#canvas-container:active {
-    cursor: grabbing;
-}
-
-#canvas-container canvas {
-    display: block;
-    width: 100%;
-    height: 100%;
-    outline: none;
-}
-
-/* 文字层 */
+/* 布局图层 */
 .typography-layer {
     position: fixed;
     inset: 0;
-    z-index: 2;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    padding: 5vh 2vw 3vh;
-    pointer-events: none;
+    padding: 6vh 2vw 4vh;
 }
 
 /* 顶部哥特英文字体 */
 .top-title {
     font-family: 'UnifrakturMaguntia', cursive, serif;
-    font-size: clamp(1.5rem, 3.5vw, 4rem);
+    font-size: clamp(1.8rem, 4vw, 4.5rem);
     font-weight: 400;
     letter-spacing: .06em;
-    line-height: 1.1;
-    color: #ffffff;
+    line-height: 1.15;
+    color: #1a1a1e; /* 深色文字 */
     text-align: center;
-    text-shadow: 0 4px 30px rgba(0,0,0,.85);
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
 }
 
 /* 中文行书行 */
@@ -91,42 +70,39 @@ html, body {
     align-items: center;
     gap: clamp(20px, 6vw, 85px);
     width: 100%;
+    margin: auto 0; /* 在上下之间自然居中 */
 }
 
 .chinese-row span {
     font-family: 'Ma Shan Zheng', cursive, serif;
-    font-size: clamp(3.5rem, 8.8vw, 9.5rem);
+    font-size: clamp(3.8rem, 9vw, 10rem);
     font-weight: 400;
     line-height: 1;
-    color: rgba(255,255,255,.96);
-    text-shadow: 0 0 35px rgba(180,140,255,.3);
+    color: #111115; /* 深黑灰色书法字体 */
+    text-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    transition: transform 0.3s ease, color 0.3s ease;
+    cursor: default;
+}
+
+/* 鼠标悬停微互动效果 */
+.chinese-row span:hover {
+    transform: translateY(-5px);
+    color: #5b34a6; /* 触碰时微显紫色 */
 }
 
 .bottom-info {
-    font-size: .7rem;
-    letter-spacing: .25em;
-    color: rgba(255,255,255,.45);
+    font-size: .75rem;
+    font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    letter-spacing: .3em;
+    color: rgba(0, 0, 0, 0.45);
     text-align: center;
-}
-
-.hint {
-    position: fixed;
-    z-index: 4;
-    left: 50%;
-    bottom: 11vh;
-    transform: translateX(-50%);
-    color: rgba(255,255,255,.4);
-    font: 10px Arial, sans-serif;
-    letter-spacing: .18em;
-    text-align: center;
-    pointer-events: none;
-    transition: opacity .5s;
+    font-weight: 500;
 }
 
 @media (max-width: 600px) {
     .typography-layer {
-        padding-top: 7vh;
-        padding-bottom: 4vh;
+        padding-top: 8vh;
+        padding-bottom: 5vh;
     }
 
     .chinese-row {
@@ -134,24 +110,16 @@ html, body {
     }
 
     .bottom-info {
-        font-size: 8px;
-        letter-spacing: .12em;
-    }
-
-    .hint {
-        bottom: 14vh;
+        font-size: 9px;
+        letter-spacing: .15em;
     }
 }
 </style>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 </head>
 
 <body>
 
 <div class="grid-bg"></div>
-
-<div id="canvas-container"></div>
 
 <div class="typography-layer">
     <div class="top-title">
@@ -170,203 +138,6 @@ html, body {
         DESIGN & EXPERIMENTAL WORK © 2026
     </div>
 </div>
-
-<div class="hint" id="hint">
-    DRAG TO ROTATE · SCROLL TO ZOOM
-</div>
-
-<script>
-(() => {
-    const container = document.getElementById('canvas-container');
-    const hint = document.getElementById('hint');
-
-    let scene, camera, renderer;
-    let diamondMesh = null;
-    let modelPivot = null;
-
-    let isDragging = false;
-    let lastX = 0;
-    let lastY = 0;
-
-    let rotationX = 0.2;
-    let rotationY = 0.4;
-    let targetRotationX = 0.2;
-    let targetRotationY = 0.4;
-
-    let zoom = 1;
-    let targetZoom = 1;
-
-    let pointerX = 0;
-    let pointerY = 0;
-    let clock = new THREE.Clock();
-
-    init();
-    animate();
-
-    function init() {
-        scene = new THREE.Scene();
-
-        camera = new THREE.PerspectiveCamera(
-            35,
-            window.innerWidth / window.innerHeight,
-            0.1,
-            100
-        );
-        camera.position.set(0, 0, 7.5);
-
-        renderer = new THREE.WebGLRenderer({
-            alpha: true,
-            antialias: true,
-            powerPreference: 'high-performance'
-        });
-
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-        renderer.setClearColor(0x0d0d11, 0);
-
-        renderer.outputEncoding = THREE.sRGBEncoding;
-        renderer.toneMapping = THREE.ACESFilmicToneMapping;
-        renderer.toneMappingExposure = 1.2;
-
-        container.appendChild(renderer.domElement);
-
-        // 灯光设置
-        scene.add(new THREE.AmbientLight(0xdcd6ff, 1.2));
-
-        const keyLight = new THREE.DirectionalLight(0xffffff, 2.5);
-        keyLight.position.set(4, 6, 6);
-        scene.add(keyLight);
-
-        const purpleLight = new THREE.PointLight(0xb066ff, 5.5, 18);
-        purpleLight.position.set(-4, 1, -2);
-        scene.add(purpleLight);
-
-        const blueLight = new THREE.PointLight(0x38bdf8, 4.5, 18);
-        blueLight.position.set(4, -2, -2);
-        scene.add(blueLight);
-
-        // 创建旋转支点
-        modelPivot = new THREE.Group();
-        scene.add(modelPivot);
-
-        createDiamond();
-
-        // 交互监听
-        container.addEventListener('pointerdown', onPointerDown);
-        window.addEventListener('pointermove', onPointerMove);
-        window.addEventListener('pointerup', onPointerUp);
-        window.addEventListener('pointercancel', onPointerUp);
-        container.addEventListener('wheel', onWheel, { passive: false });
-        window.addEventListener('resize', onResize);
-    }
-
-    function createDiamond() {
-        // 创建 3D 菱形（双锥八面体，上下拉伸出优美的几何比例）
-        const geometry = new THREE.OctahedronGeometry(1.4, 0);
-        
-        // 适当拉长 Y 轴，使其呈立体的长菱形水晶效果
-        geometry.scale(1.0, 1.5, 1.0);
-
-        // 浅紫磨砂半透明玻璃材质
-        const material = new THREE.MeshPhysicalMaterial({
-            color: new THREE.Color(0xd8c8ff),
-            emissive: new THREE.Color(0x2d124d),
-            emissiveIntensity: 0.25,
-            metalness: 0.1,
-            roughness: 0.18,
-            transmission: 0.85,    // 折射半透明
-            thickness: 1.5,
-            clearcoat: 1.0,
-            clearcoatRoughness: 0.1,
-            transparent: true,
-            opacity: 0.88,
-            side: THREE.DoubleSide
-        });
-
-        diamondMesh = new THREE.Mesh(geometry, material);
-
-        // 添加细发光边框外发光线，增强几何雕塑感
-        const wireframeGeo = new THREE.WireframeGeometry(geometry);
-        const wireframeMat = new THREE.LineBasicMaterial({
-            color: 0xe3d5ff,
-            transparent: true,
-            opacity: 0.35
-        });
-        const wireframe = new THREE.LineSegments(wireframeGeo, wireframeMat);
-        diamondMesh.add(wireframe);
-
-        modelPivot.add(diamondMesh);
-    }
-
-    function onPointerDown(event) {
-        if (event.button !== undefined && event.button !== 0) return;
-        isDragging = true;
-        lastX = event.clientX;
-        lastY = event.clientY;
-        container.setPointerCapture?.(event.pointerId);
-    }
-
-    function onPointerMove(event) {
-        pointerX = (event.clientX / window.innerWidth - 0.5) * 2;
-        pointerY = (event.clientY / window.innerHeight - 0.5) * 2;
-
-        if (!isDragging) return;
-
-        const dx = event.clientX - lastX;
-        const dy = event.clientY - lastY;
-
-        targetRotationY += dx * 0.008;
-        targetRotationX += dy * 0.008;
-
-        lastX = event.clientX;
-        lastY = event.clientY;
-
-        hint.style.opacity = '0';
-    }
-
-    function onPointerUp() {
-        isDragging = false;
-    }
-
-    function onWheel(event) {
-        event.preventDefault();
-        targetZoom += event.deltaY * -0.001;
-        targetZoom = Math.max(0.65, Math.min(1.8, targetZoom));
-    }
-
-    function onResize() {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    }
-
-    function animate() {
-        requestAnimationFrame(animate);
-
-        const elapsed = clock.getElapsedTime();
-
-        if (modelPivot) {
-            rotationX += (targetRotationX - rotationX) * 0.08;
-            rotationY += (targetRotationY - rotationY) * 0.08;
-
-            modelPivot.rotation.x = rotationX;
-            modelPivot.rotation.y = rotationY;
-
-            // 自动微弱自转与悬浮
-            if (!isDragging) {
-                targetRotationY += 0.002;
-                modelPivot.position.y = Math.sin(elapsed * 0.9) * 0.06;
-            }
-
-            zoom += (targetZoom - zoom) * 0.1;
-            modelPivot.scale.setScalar(zoom);
-        }
-
-        renderer.render(scene, camera);
-    }
-})();
-</script>
 
 </body>
 </html>
